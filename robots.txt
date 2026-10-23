@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /p/
-Disallow: /api/
-
-Sitemap: https://sendloves.netlify.app/sitemap.xml
