@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Open me</title>
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=Outfit:wght@400..600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f1530;--panel:#19214a;--ink:#f3f1ff;--mut:#a9aed6;--acc:#8ff0c8;--acc2:#b9a7ff;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -36,8 +36,10 @@ footer{margin-top:40px;font-size:.9rem;color:var(--mut)}
 footer a{color:var(--acc)}
 @media (prefers-reduced-motion:reduce){.tile,#reveal.show{transition:none;animation:none}}
 </style>
+<link rel="stylesheet" href="/glass.css">
 </head>
 <body>
+<div class="orbs" aria-hidden="true"><i></i><i></i><i></i></div>
 <main>
   <h1 id="hello">Opening…</h1>
   <p id="sub"></p>
@@ -56,6 +58,21 @@ footer a{color:var(--acc)}
 <script src="/shared.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  for (let i = 0; i < 26; i++) {
+    const h = document.createElement("span");
+    h.className = "heart"; h.textContent = "♥";
+    h.style.left = Math.random() * 100 + "vw";
+    h.style.fontSize = (14 + Math.random() * 22) + "px";
+    h.style.color = Math.random() < .5 ? "var(--acc)" : "var(--acc2)";
+    h.style.animationDuration = (3 + Math.random() * 3) + "s";
+    h.style.animationDelay = (Math.random() * 1.2) + "s";
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 8000);
+  }
+}
 
 function start(C) {
   const N = C.n, TOTAL = N * N, FIRST = TOTAL - C.free;
@@ -110,7 +127,7 @@ function start(C) {
     const m = $("msg");
     C.message.split(/\n+/).forEach(line => { if (!line.trim()) return; const p = document.createElement("p"); p.textContent = line; m.appendChild(p); });
     C.photos.forEach(src => { const i = document.createElement("img"); i.src = src; i.alt = ""; $("pics").appendChild(i); });
-    const r = $("reveal"); r.classList.add("show");
+    const r = $("reveal"); r.classList.add("show"); confetti();
     r.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth" });
   }
   $("shuffle").addEventListener("click", shuffle);

@@ -11,7 +11,7 @@
 <meta property="og:description" content="SendLove lets you send someone a surprise. Pick an occasion, add a message and pictures, and they solve a sliding puzzle to open it.">
 <meta property="og:url" content="https://sendloves.netlify.app/">
 <meta name="google-site-verification" content="sU1pU3QrxZ1DttQQggCnWaozZ0hZdocqMXhhT07NOs4" />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=Outfit:wght@400..600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f1530;--panel:#19214a;--ink:#f3f1ff;--mut:#a9aed6;--acc:#8ff0c8;--acc2:#b9a7ff;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *,*::before,*::after{box-sizing:inherit}
@@ -49,8 +49,10 @@ input[type=text]:focus,textarea:focus{outline:none;border-color:var(--acc2)}
 .mine{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08)}
 .mine a{color:var(--acc);word-break:break-all}
 </style>
+<link rel="stylesheet" href="/glass.css">
 </head>
 <body>
+<div class="orbs" aria-hidden="true"><i></i><i></i><i></i></div>
 <main>
   <h1>SendLove</h1>
   <p>Send someone a surprise. Pick the occasion, add your message and pictures. They solve the puzzle to open it.</p>
