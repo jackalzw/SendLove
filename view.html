@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Open me</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=Outfit:wght@400..600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1530;--panel:#19214a;--ink:#f3f1ff;--mut:#a9aed6;--acc:#8ff0c8;--acc2:#b9a7ff;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:520px;margin:0 auto;padding:28px 20px 56px}
+h1,h2{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;line-height:1.05;margin:0 0 10px}
+h1{font-size:clamp(2.2rem,9vw,3.2rem)}
+h2{font-size:clamp(1.9rem,7vw,2.6rem)}
+p{margin:0 0 14px;color:var(--mut);max-width:60ch}
+.bar{display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;color:var(--mut);font-size:.95rem}
+button.btn{font:inherit;font-weight:600;background:var(--acc);color:#0f1530;border:0;border-radius:999px;padding:10px 20px;cursor:pointer}
+button.btn:focus-visible,.tile:focus-visible{outline:3px solid var(--acc2);outline-offset:2px}
+.board{position:relative;width:100%;aspect-ratio:1;background:var(--panel);border-radius:18px;overflow:hidden;touch-action:manipulation}
+.tile{position:absolute;border:2px solid var(--bg);padding:0;cursor:pointer;background-repeat:no-repeat;transition:left .18s ease,top .18s ease,opacity .6s ease,border-color .6s ease}
+.tile.blank{opacity:0;pointer-events:none}
+.board.done .tile{border-color:transparent;pointer-events:none}
+.board.done .tile.blank{opacity:1}
+#reveal{display:none;margin-top:36px}
+#reveal.show{display:block;animation:rise .9s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.msg p{color:var(--ink);font-size:1.12rem}
+.pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:22px 0}
+.pics img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;display:block}
+.wm{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);text-align:center;font-size:.8rem;color:var(--mut);opacity:.75;pointer-events:none;z-index:4}
+footer{margin-top:40px;font-size:.9rem;color:var(--mut)}
+footer a{color:var(--acc)}
+@media (prefers-reduced-motion:reduce){.tile,#reveal.show{transition:none;animation:none}}
+</style>
+<link rel="stylesheet" href="/glass.css">
+</head>
+<body>
+<div class="orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+<main>
+  <h1 id="hello">Opening…</h1>
+  <p id="sub"></p>
+  <div id="game" hidden>
+    <div class="bar"><span id="moves">0 moves</span><button class="btn" id="shuffle" type="button">Shuffle</button></div>
+    <div class="board" id="board" aria-label="Sliding puzzle"></div>
+  </div>
+  <section id="reveal" aria-live="polite">
+    <h2 id="to"></h2>
+    <div class="msg" id="msg"></div>
+    <div class="pics" id="pics"></div>
+  </section>
+  <footer>Made with <a href="/">SendLove</a></footer>
+</main>
+<div class="wm">powered by Pardon Chida</div>
+<script src="/shared.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  for (let i = 0; i < 26; i++) {
+    const h = document.createElement("span");
+    h.className = "heart"; h.textContent = "♥";
+    h.style.left = Math.random() * 100 + "vw";
+    h.style.fontSize = (14 + Math.random() * 22) + "px";
+    h.style.color = Math.random() < .5 ? "var(--acc)" : "var(--acc2)";
+    h.style.animationDuration = (3 + Math.random() * 3) + "s";
+    h.style.animationDelay = (Math.random() * 1.2) + "s";
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 8000);
+  }
+}
+
+function start(C) {
+  const N = C.n, TOTAL = N * N, FIRST = TOTAL - C.free;
+  for (const k in C.theme) document.documentElement.style.setProperty("--" + k, C.theme[k]);
+  document.title = C.hello;
+  $("hello").textContent = C.hello;
+  $("sub").textContent = "Slide the tiles to rebuild the picture. When it’s whole, it opens.";
+  $("game").hidden = false;
+  const board = $("board");
+  let pos, moves, solved;
+  const tiles = [];
+  for (let v = 0; v < TOTAL; v++) {
+    const t = document.createElement("button");
+    t.type = "button"; t.className = "tile" + (v >= FIRST ? " blank" : "");
+    t.style.width = t.style.height = 100 / N + "%";
+    t.style.backgroundSize = N * 100 + "% " + N * 100 + "%";
+    t.style.backgroundImage = 'url("' + C.photos[0] + '")';
+    t.style.backgroundPosition = ((v % N) * 100 / (N - 1)) + "% " + (Math.floor(v / N) * 100 / (N - 1)) + "%";
+    t.setAttribute("aria-label", "Tile " + (v + 1));
+    t.addEventListener("click", () => tap(v));
+    board.appendChild(t); tiles.push(t);
+  }
+  function place() {
+    pos.forEach((p, v) => { tiles[v].style.left = (p % N) * 100 / N + "%"; tiles[v].style.top = Math.floor(p / N) * 100 / N + "%"; });
+    $("moves").textContent = moves + (moves === 1 ? " move" : " moves");
+  }
+  function adjacent(a, b) { return Math.abs(a % N - b % N) + Math.abs(Math.floor(a / N) - Math.floor(b / N)) === 1; }
+  function freeNear(v) { for (let b = FIRST; b < TOTAL; b++) if (adjacent(pos[v], pos[b])) return b; return -1; }
+  function swapWith(v, b) { const p = pos[v]; pos[v] = pos[b]; pos[b] = p; }
+  function shuffle() {
+    board.classList.remove("done"); solved = false; moves = 0;
+    pos = Array.from({ length: TOTAL }, (_, i) => i);
+    let last = -1;
+    for (let i = 0; i < 400; i++) {
+      const options = [];
+      for (let v = 0; v < FIRST; v++) if (v !== last && freeNear(v) !== -1) options.push(v);
+      const v = options[Math.floor(Math.random() * options.length)];
+      swapWith(v, freeNear(v)); last = v;
+    }
+    if (pos.every((p, v) => v >= FIRST || p === v)) return shuffle();
+    place();
+  }
+  function tap(v) {
+    if (solved || v >= FIRST) return;
+    const b = freeNear(v);
+    if (b === -1) return;
+    swapWith(v, b); moves++; place();
+    if (pos.every((p, i) => i >= FIRST || p === i)) { solved = true; board.classList.add("done"); setTimeout(openReveal, 1100); }
+  }
+  function openReveal() {
+    $("to").textContent = "For " + C.to;
+    const m = $("msg");
+    C.message.split(/\n+/).forEach(line => { if (!line.trim()) return; const p = document.createElement("p"); p.textContent = line; m.appendChild(p); });
+    C.photos.forEach(src => { const i = document.createElement("img"); i.src = src; i.alt = ""; $("pics").appendChild(i); });
+    const r = $("reveal"); r.classList.add("show"); confetti();
+    r.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth" });
+  }
+  $("shuffle").addEventListener("click", shuffle);
+  shuffle();
+}
+
+(async function () {
+  const id = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
+  let d;
+  try {
+    const r = await fetch("/api/get?id=" + encodeURIComponent(id));
+    if (!r.ok) throw new Error("missing");
+    d = await r.json();
+  } catch (e) {
+    $("hello").textContent = "This puzzle isn’t available.";
+    $("sub").textContent = "It may have been deleted, or the link is wrong.";
+    return;
+  }
+  const o = OCC.find(x => x.key === d.occasion) || OCC[OCC.length - 1];
+  const L = LEVELS.find(x => x.key === d.level) || LEVELS[0];
+  start({ to: d.to, hello: o.hello(d.to), message: d.message, photos: d.photos, n: L.n, free: L.free, theme: o.theme });
+})();
+</script>
+</body>
+</html>
