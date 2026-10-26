@@ -69,3 +69,9 @@ main>*:nth-child(7){animation-delay:.47s}main>*:nth-child(8){animation-delay:.54
 /* watermark as a small glass pill so it stays readable over content */
 .wm{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:90vw;padding:4px 14px;border-radius:999px;
   background:rgba(15,21,48,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);opacity:.9}
+
+/* dragging tiles */
+.tile{touch-action:none;-webkit-user-select:none;user-select:none}
+.tile.drag{transition:none!important;z-index:3;cursor:grabbing;box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.tile.nope{animation:nope .3s ease}
+@keyframes nope{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}

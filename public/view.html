@@ -79,7 +79,7 @@ function start(C) {
   for (const k in C.theme) document.documentElement.style.setProperty("--" + k, C.theme[k]);
   document.title = C.hello;
   $("hello").textContent = C.hello;
-  $("sub").textContent = "Slide the tiles to rebuild the picture. When it’s whole, it opens.";
+  $("sub").textContent = "Drag the tiles into the empty spaces to rebuild the picture. When it’s whole, it opens.";
   $("game").hidden = false;
   const board = $("board");
   let pos, moves, solved;
@@ -92,7 +92,14 @@ function start(C) {
     t.style.backgroundImage = 'url("' + C.photos[0] + '")';
     t.style.backgroundPosition = ((v % N) * 100 / (N - 1)) + "% " + (Math.floor(v / N) * 100 / (N - 1)) + "%";
     t.setAttribute("aria-label", "Tile " + (v + 1));
-    t.addEventListener("click", () => tap(v));
+    t.addEventListener("pointerdown", e => dragStart(e, v));
+    t.addEventListener("click", e => { if (e.detail === 0) tap(v); });
+    t.addEventListener("keydown", e => {
+      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (!d || solved || v >= FIRST) return;
+      const o = neighbours(v).find(o => o.ux === d[0] && o.uy === d[1]);
+      if (o) { e.preventDefault(); swapWith(v, o.b); moves++; place(); checkWin(); }
+    });
     board.appendChild(t); tiles.push(t);
   }
   function place() {
@@ -115,12 +122,50 @@ function start(C) {
     if (pos.every((p, v) => v >= FIRST || p === v)) return shuffle();
     place();
   }
+  function checkWin() {
+    if (pos.every((p, i) => i >= FIRST || p === i)) { solved = true; board.classList.add("done"); setTimeout(openReveal, 1100); }
+  }
   function tap(v) {
     if (solved || v >= FIRST) return;
     const b = freeNear(v);
     if (b === -1) return;
-    swapWith(v, b); moves++; place();
-    if (pos.every((p, i) => i >= FIRST || p === i)) { solved = true; board.classList.add("done"); setTimeout(openReveal, 1100); }
+    swapWith(v, b); moves++; place(); checkWin();
+  }
+  function neighbours(v) {
+    const out = [];
+    for (let b = FIRST; b < TOTAL; b++) {
+      if (!adjacent(pos[v], pos[b])) continue;
+      out.push({ b: b, ux: (pos[b] % N) - (pos[v] % N), uy: Math.floor(pos[b] / N) - Math.floor(pos[v] / N) });
+    }
+    return out;
+  }
+  function dragStart(e, v) {
+    if (solved || v >= FIRST || (e.pointerType === "mouse" && e.button !== 0)) return;
+    const t = tiles[v], opts = neighbours(v);
+    if (!opts.length) { t.classList.add("nope"); setTimeout(() => t.classList.remove("nope"), 320); return; }
+    e.preventDefault();
+    const bw = board.clientWidth, cellPx = bw / N, sx = e.clientX, sy = e.clientY, t0 = performance.now();
+    const col = pos[v] % N, row = Math.floor(pos[v] / N);
+    let best = null, off = 0;
+    t.classList.add("drag");
+    try { t.setPointerCapture(e.pointerId); } catch (err) {}
+    function move(ev) {
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      let bp = 0; best = null;
+      for (const o of opts) { const pr = dx * o.ux + dy * o.uy; if (pr > bp) { bp = pr; best = o; } }
+      off = best ? Math.min(bp, cellPx) : 0;
+      t.style.left = (col * 100 / N + (best ? best.ux * off : 0) / bw * 100) + "%";
+      t.style.top = (row * 100 / N + (best ? best.uy * off : 0) / bw * 100) + "%";
+    }
+    function end(ev) {
+      t.removeEventListener("pointermove", move); t.removeEventListener("pointerup", end); t.removeEventListener("pointercancel", end);
+      try { t.releasePointerCapture(e.pointerId); } catch (err) {}
+      t.classList.remove("drag");
+      const quick = performance.now() - t0 < 280 && off > cellPx * 0.12;
+      if (best && ev.type !== "pointercancel" && (off > cellPx * 0.4 || quick)) { swapWith(v, best.b); moves++; place(); checkWin(); }
+      else place();
+    }
+    t.addEventListener("pointermove", move); t.addEventListener("pointerup", end); t.addEventListener("pointercancel", end);
   }
   function openReveal() {
     $("to").textContent = "For " + C.to;
